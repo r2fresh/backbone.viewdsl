@@ -28,48 +28,134 @@
         </ul>
       </header>
       <section>
-        <h2>Specs</h2>
+        <p>Backbone.ViewDSL is a tiny library which provides a DSL for defining
+Backbone.View hierarchies. If you are tired of manually composing views in your
+Backbone application and want to get rid of all accompanying boilerplate then
+this library could help a bit.</p>
 
-<p>Specs are strings which can point to some JS object:</p>
-
-<ul>
-<li><p><code>module1/module2:obj1.obj2</code>
-points to <code>obj2</code> inside <code>obj1</code> in <code>module1/module2</code> AMD module.</p></li>
-<li><p><code>obj1.obj2</code>
-points to <code>obj2</code> inside <code>obj1</code> inside <code>window</code> object</p></li>
-</ul><h2>Wrap DOM with views</h2>
-
-<p>Wrap DOM with views, using standard tags:</p>
-
-<pre><code>&lt;div view="myapp/views:MyView" class="some-class"&gt;&lt;/div&gt;
-</code></pre>
-
-<p>Attribute <code>view</code> should be a spec.</p>
-
-<p>Passing parameters to views:</p>
+<p>Backbone.ViewDSL provides a DSL built on top of HTML with the following
+features:</p>
 
 <ul>
-<li><p>Parameter names are converted to camelCase, so <code>another-param</code> becomes
-<code>anotherParam</code>.</p></li>
-<li><p>If parameter value starts with <code>this.</code> it then will be passed by reference
-and the reference will be equal to the one from the passed context.</p></li>
-</ul><h2>Value interpolation</h2>
+<li><p>view instantiation (optionally loaded from AMD modules)</p></li>
+<li><p>conditional exclusion of DOM elements from a final result</p></li>
+<li><p>string and DOM node values interpolation</p></li>
+</ul><h2>Usage</h2>
 
-<p>Interpolate string values, DOM nodes and jQuery elements:</p>
+<p>Backbone.ViewDSL provides a view base class with additional methods to use DSL
+for DOM rendering. There are two ways to use it — the first one is an ad-hoc
+view creation with a <code>from</code> static method:</p>
 
-<pre><code>&lt;div&gt;
-  {{ somevalue }}
-&lt;/div&gt;
+<pre><code>sidebarPromise = View.from """
+  &lt;div class="sidebar"&gt;
+    &lt;ul class="sidebar-items"&gt;
+      &lt;li class="sidebar-item"&gt;...&lt;/li&gt;
+      ...
+    &lt;/ul&gt;
+  &lt;/div&gt;
+  """
 </code></pre>
 
-<h2>If blocks</h2>
+<p>This way you get a <code>sidebarPromise</code>, a promise value which will resolve
+asynchronously in the future. The reason it returns a promise is because
+rendering process may require to load some additional resources using XHR (such
+as additional view classes). You can execute some code with constructed view by
+attaching <code>then</code> callback to promise:</p>
 
-<pre><code>&lt;div if="hasCounts"&gt;
-
-&lt;/div&gt;
+<pre><code>sidebarPromise.then (sidebar) -&gt;
+  console.log "View constructed: #{sidebar}"
 </code></pre>
 
-<p>Element would be removed if <code>hasCounts()</code> or <code>hasCounts</code> evaluates to <code>false</code>.</p>
+<p>Note that the <code>div.sidebar</code> will become the root element, the <code>el</code> of the view.</p>
+
+<p>Another way to use <code>Backbone.ViewDSL.View</code> is to subclass it and use <code>renderDOM</code>
+method for rendering DOM:</p>
+
+<pre><code>class SidebarView extends Backbone.ViewDSL.View
+  tagName: "div"
+  className: "sidebar"
+  render: -&gt;
+    @renderDOM """
+      &lt;ul class="sidebar-items"&gt;
+        &lt;li class="sidebar-item"&gt;...&lt;/li&gt;
+        ...
+      &lt;/ul&gt;
+      """
+</code></pre>
+
+<p>This way <code>renderDOM</code> method will also return a promise but the one which
+resolves to DOM node which is rendered from template.</p>
+
+<h2>View instantiation</h2>
+
+<p>To instantiate view you can use <code>view</code> DOM attribute:</p>
+
+<pre><code>class MyView extends Backbone.ViewDSL.View
+
+  render: -&gt;
+    @renderDOM """
+      &lt;div view="myapp.views.SidebarView" class="sidebar"&gt;&lt;/div&gt;
+      """
+</code></pre>
+
+<p>This way <code>myapp.views.SidebarView</code> will be instantiated and rendered with <code>div.sidebar</code>
+element as root element. All instantiated views become the "child views" of the
+parent views and stored inside <code>views</code> attribute — that means on parent's
+<code>remove()</code> call they are also being freed by calling <code>remove()</code>.</p>
+
+<h2>String and DOM node values interpolation</h2>
+
+<p>You can insert arbitrary strings, DOM nodes or jQuery elements into template:</p>
+
+<pre><code>class MyView extends Backbone.ViewDSL.View
+
+  name: -&gt;
+    $ '&lt;span class="name"&gt;World&lt;/span&gt;'
+
+  render: -&gt;
+    @renderDOM """
+      &lt;div class="hello"&gt;
+        Hello, {{name}}!
+      &lt;/div&gt;
+      """
+</code></pre>
+
+<p>This will render a <code>Hello, &lt;span class="name"&gt;World&lt;/span&gt;</code> string inside
+<code>div.hello</code> element. Note that you can also return just a raw string from
+<code>name()</code> method — it will be converted to DOM <code>TextNode</code>; otherwise you can
+return any DOM object.</p>
+
+<h2>Conditional exclusion</h2>
+
+<p>To remove DOM nodes conditionally you can use <code>if</code> DOM attribute:</p>
+
+<pre><code>class MyView extends Backbone.ViewDSL.View
+
+  showConditional: -&gt;
+    this.options.showConditional
+
+  render: -&gt;
+    @renderDOM """
+      &lt;div class="conditional" if="showConditional"&gt;
+        ...
+      &lt;/div&gt;
+      """
+</code></pre>
+
+<p>Element <code>div.conditional</code> will be removed if <code>showConditional()</code> method evaluates
+to <code>false</code>. Note that you can also refer to view properties and not only methods
+inside <code>if</code> attributes.</p>
+
+<h2>Specs</h2>
+
+<p>Specs are strings which point to JS objects, specs can point to some global
+object or to some object inside AMD module:</p>
+
+<ul>
+<li><p><code>module1/module2:obj1.obj2</code> points to <code>obj2</code> inside <code>obj1</code> in
+<code>module1/module2</code> AMD module.</p></li>
+<li><p><code>obj1.obj2</code> points to <code>obj2</code> inside <code>obj1</code> inside <code>window</code> object</p></li>
+</ul>
       </section>
       <footer>
         <p>This project is maintained by <a href="https://github.com/andreypopp">andreypopp</a></p>
