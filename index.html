@@ -77,8 +77,8 @@ view creation with a <code>from</code> static method:</p>
 <p>This way you get a <code>sidebarPromise</code>, a promise value which will resolve
 asynchronously in the future. The reason it returns a promise is because
 rendering process may require to load some additional resources using XHR (such
-as additional view classes). You can execute some code with constructed view by
-attaching <code>then</code> callback to promise:</p>
+as additional view classes). You can execute some code with constructed a view
+by attaching <code>then</code> callback to the promise:</p>
 
 <pre><code>sidebarPromise.then (sidebar) -&gt;
   console.log "View constructed: #{sidebar}"
@@ -106,7 +106,7 @@ resolves to DOM node which is rendered from template.</p>
 
 <h2>View instantiation</h2>
 
-<p>To instantiate view you can use <code>view</code> DOM attribute:</p>
+<p>To instantiate a view you can use <code>view</code> DOM attribute:</p>
 
 <pre><code>class MyView extends Backbone.ViewDSL.View
 
@@ -117,9 +117,9 @@ resolves to DOM node which is rendered from template.</p>
 </code></pre>
 
 <p>This way <code>myapp.views.SidebarView</code> will be instantiated and rendered with <code>div.sidebar</code>
-element as root element. All instantiated views become the "child views" of the
-parent views and stored inside <code>views</code> attribute — that means on parent's
-<code>remove()</code> call they are also being freed by calling <code>remove()</code>.</p>
+element as the view's root element. All instantiated views become the "child
+views" of a parent view and stored inside a <code>views</code> attribute — that means on
+parent's <code>remove()</code> call they are also being freed by calling <code>remove()</code>.</p>
 
 <h2>String and DOM node values interpolation</h2>
 
