@@ -40,13 +40,31 @@ features:</p>
 <li><p>view instantiation (optionally loaded from AMD modules)</p></li>
 <li><p>conditional exclusion of DOM elements from a final result</p></li>
 <li><p>string and DOM node values interpolation</p></li>
-</ul><h2>Usage</h2>
+</ul><h2>Installation</h2>
+
+<p>You can simply get
+[<code>backbone.viewdsl.js</code>][<a href="https://raw.github.com/andreypopp/backbone.viewdsl/master/backbone.viewdsl.js">https://raw.github.com/andreypopp/backbone.viewdsl/master/backbone.viewdsl.js</a>]
+from the repository or use the repository as a submodule in your project. In
+that case you will need all the dependencies to be in place —
+[jQuery][<a href="http://jquery.com">http://jquery.com</a>], [Backbone][http://<a href="http://backbonejs.org">http://backbonejs.org</a>] and
+[RSVP.js][<a href="https://github.com/tildeio/rsvp.js">https://github.com/tildeio/rsvp.js</a>].</p>
+
+<p>Otherwise you can use awesome [bower][<a href="http://twitter.github.com/bower/">http://twitter.github.com/bower/</a>] package
+manager and install Backbone.ViewDSL with:</p>
+
+<pre><code>bower install backbone.viewdsl
+</code></pre>
+
+<p>This way you will have Backbone.ViewDSL and all the dependencies installed under
+<code>./components</code> directory.</p>
+
+<h2>Usage</h2>
 
 <p>Backbone.ViewDSL provides a view base class with additional methods to use DSL
 for DOM rendering. There are two ways to use it — the first one is an ad-hoc
 view creation with a <code>from</code> static method:</p>
 
-<pre><code>sidebarPromise = View.from """
+<pre><code>sidebarPromise = Backbone.ViewDSL.View.from """
   &lt;div class="sidebar"&gt;
     &lt;ul class="sidebar-items"&gt;
       &lt;li class="sidebar-item"&gt;...&lt;/li&gt;
