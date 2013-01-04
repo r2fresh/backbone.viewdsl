@@ -62,7 +62,7 @@ manager and install Backbone.ViewDSL with:</p>
 
 <p>Backbone.ViewDSL provides a view base class with additional methods to use DSL
 for DOM rendering. There are two ways to use it — the first one is an ad-hoc
-view creation with a <code>from</code> static method:</p>
+view creation with a <code>from(template)</code> static method:</p>
 
 <pre><code>sidebarPromise = Backbone.ViewDSL.View.from """
   &lt;div class="sidebar"&gt;
@@ -86,8 +86,11 @@ by attaching <code>then</code> callback to the promise:</p>
 
 <p>Note that the <code>div.sidebar</code> will become the root element, the <code>el</code> of the view.</p>
 
-<p>Another way to use <code>Backbone.ViewDSL.View</code> is to subclass it and use <code>renderDOM</code>
-method for rendering DOM:</p>
+<p>Static method <code>from(template)</code> accepts HTML strings, DOM elements or jQuery
+elements as a <code>template</code> argument.</p>
+
+<p>Another way to use <code>Backbone.ViewDSL.View</code> is to subclass it and use
+<code>renderDOM(template, localContext)</code> method for rendering DOM:</p>
 
 <pre><code>class SidebarView extends Backbone.ViewDSL.View
   tagName: "div"
@@ -102,7 +105,28 @@ method for rendering DOM:</p>
 </code></pre>
 
 <p>This way <code>renderDOM</code> method will also return a promise but the one which
-resolves to DOM node which is rendered from template.</p>
+resolves to DOM node which is rendered from template. First argument <code>template</code>
+can be a HTML string, DOM element or jQuery element. As a second argument
+<code>renderDOM</code> accepts an object which provides "local" values to template context
+so actual context's prototype chain looks like <code>localContext -&gt; this</code>.</p>
+
+<p><code>Backbone.ViewDSL.View</code> also provides default implementation of
+<code>render(localContext)</code> method which renders DOM from a template provided by
+instance or prototype-level <code>template</code> attribute. In the latter case of
+<code>template</code> attribute being attached to prototype — <code>render</code> method caches its
+DOM representation not to parse template more than once when rendering multiple
+view instances. So the easiest way to define view is:</p>
+
+<pre><code>class SidebarView extends Backbone.ViewDSL.View
+  tagName: "div"
+  className: "sidebar"
+  template: """
+    &lt;ul class="sidebar-items"&gt;
+      &lt;li class="sidebar-item"&gt;...&lt;/li&gt;
+      ...
+    &lt;/ul&gt;
+    """
+</code></pre>
 
 <h2>View instantiation</h2>
 
