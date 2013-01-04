@@ -31,26 +31,61 @@
         <p>Backbone.ViewDSL is a tiny library which provides a DSL for defining
 Backbone.View hierarchies. If you are tired of manually composing views in your
 Backbone application and want to get rid of all accompanying boilerplate then
-this library could help a bit.</p>
+this library could help you a bit.</p>
 
 <p>Backbone.ViewDSL provides a DSL built on top of HTML with the following
 features:</p>
 
 <ul>
-<li><p>view instantiation (optionally loaded from AMD modules)</p></li>
-<li><p>conditional exclusion of DOM elements from a final result</p></li>
-<li><p>string and DOM node values interpolation</p></li>
-</ul><h2>Installation</h2>
+<li>view instantiation (optionally loaded from AMD modules)</li>
+<li>conditional exclusion of DOM elements from a final result</li>
+<li>string and DOM node values interpolation</li>
+</ul><p>The basic example is to define a view which renders a chunk of HTML and instantiates
+some sub-views:</p>
 
-<p>You can simply get
-<a href="https://raw.github.com/andreypopp/backbone.viewdsl/master/backbone.viewdsl.js"><code>backbone.viewdsl.js</code></a>
-from the repository or use the repository as a submodule in your project. In
-that case you will need all the dependencies to be in place —
-<a href="http://jquery.com">jQuery</a>, <a href="http://http://backbonejs.org">Backbone</a> and
+<pre><code>class App extends Backbone.ViewDSL.View
+  template: """
+    &lt;h1&gt;{{options.title}}&lt;/h1&gt;
+    &lt;div class="sidebar" view="app.views.Sidebar" view-id="sidebar"&gt;&lt;/div&gt;
+    &lt;div class="content" view="app.views.Content" view-id="content"&gt;&lt;/div&gt;
+    &lt;div class="footer"&gt;{{options.title}} by {{options.author}}&lt;/div&gt;
+    """
+</code></pre>
+
+<p>The code above is equivalent to the following piece of code written with "raw"
+Backbone abstractions:</p>
+
+<pre><code>class App extends Backbone.View
+  render: -&gt;
+    this.$el.html """
+      &lt;h1&gt;#{@options.title}&lt;/h1&gt;
+      &lt;div class="sidebar"&gt;&lt;/div&gt;
+      &lt;div class="content"&gt;&lt;/div&gt;
+      &lt;div class="footer"&gt;#{@options.title} by #{@options.author}&lt;/div&gt;
+      """
+    this.content = new app.views.ContentView
+      el: @$('.content')
+      collection: @contentItems
+    this.content.render()
+    this.sidebar = new app.views.SidebarView
+      el: @$('.sidebar')
+    this.sidebar.render()
+</code></pre>
+
+<p>Which is, I think, more verbose and mostly consist of boilerplate. Also
+<code>Backbone.ViewDSL.View</code> keeps track of instantiated views and handles its
+disposal by removing all of them on a <code>remove()</code> call on parent view so you are
+safe from memory leaks.</p>
+
+<h2>Installation</h2>
+
+<p>You can simply get <a href="https://raw.github.com/andreypopp/backbone.viewdsl/master/backbone.viewdsl.js"><code>backbone.viewdsl.js</code></a> from the repository
+or use the repository as a submodule in your project. In that case you will need
+all the dependencies to be in place — <a href="http://jquery.com">jQuery</a>, <a href="http://backbonejs.org">Backbone</a> and
 <a href="https://github.com/tildeio/rsvp.js">RSVP.js</a>.</p>
 
-<p>Otherwise you can use awesome <a href="http://twitter.github.com/bower/">bower</a> package
-manager and install Backbone.ViewDSL with:</p>
+<p>Otherwise you can use awesome <a href="http://twitter.github.com/bower/">bower</a> package manager and install
+Backbone.ViewDSL with:</p>
 
 <pre><code>bower install backbone.viewdsl
 </code></pre>
