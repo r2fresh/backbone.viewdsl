@@ -441,14 +441,14 @@
 
   class ActiveView extends View
 
-    processAttributeAddAttr: (context, node, attr) ->
+    processAttributeToggleAttr: (context, node, attr) ->
       value = attr.value
       node.removeAttribute(attr.name)
-      [attrName, path] = value.split(':')
+      [attrName, path] = value.split(':', 2)
       {attrCtx, lastAttrName} = getByPath(context, path, true)
       update = ->
         if attrCtx[lastAttrName] and not node.hasAttribute(attrName)
-          node.setAttribute(attrName) 
+          node.setAttribute(attrName)
         else if node.hasAttribute(attrName)
           node.removeAttribute(attrName)
       attrCtx.on "change:#{lastAttrName}", update
@@ -466,14 +466,26 @@
       attrCtx.on "change:#{lastAttrName}", update
       update()
 
+    processAttributeToggleClass: (context, node, attr) ->
+      value = attr.value
+      node.removeAttribute(attr.name)
+      node = $(node)
+      [className, path] = value.split(':', 2)
+      {attrCtx, lastAttrName} = getByPath(context, path, true)
+      update = ->
+        if attrCtx[lastAttrName]
+          node.addClass(className)
+        else 
+          node.removeClass(className)
+      attrCtx.on "change:#{lastAttrName}", update
+      update()
+
     processValueBind: (context, value) ->
       {attrCtx, lastAttrName} = getByPath(context, value, true)
       node = document.createTextNode()
       update = ->
         newVal = attrCtx[lastAttrName].toString()
-        console.log 'trigger'
         if newVal != node.data
-          console.log 'update'
           node.data = newVal
       attrCtx.on "change:#{lastAttrName}", update
       update()
