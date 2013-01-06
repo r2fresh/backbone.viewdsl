@@ -137,7 +137,7 @@
       break if o == undefined
     if callIfMethod and jQuery.isFunction(o)
       o = o.call(ctx)
-    {attr: o, attrCtx: ctx}
+    {attr: o, attrCtx: ctx, lastAttrName: n}
 
   # Resolve spec
   #
@@ -283,11 +283,23 @@
 
     nodes = for part in parts
       if part[0] == '\uF001'
-        getByPath(context, part.slice(1).trim(), true).attr or ''
+        value = part.slice(1).trim()
+        if /:/.test value
+          [procName, value] = value.split(':', 2)
+          procName = "processValue#{procName[0].toUpperCase()}#{procName.slice(1)}"
+          context[procName](context, value)
+        else
+          getByPath(context, value, true).attr or ''
       else
         part
 
     join(nodes)
+
+  ignoreAttrRe = ///^(
+    src|href|style|id|class|type|value|for|autofocus
+    |placeholder|item|itemprop|draggable|title
+    |width|height|view)$
+    |^view-///
 
   # Process `node`'s attributes.
   processAttributes = (context, node) ->
@@ -295,23 +307,27 @@
       return promise {}
 
     # conditional exclusion
-    if node.attributes?.if
-      show = getByPath(context, node.attributes.if.value, true).attr
+    if node.attributes['if']
+      value = node.attributes['if'].value
       node.removeAttribute('if')
-      return promise {remove: true} unless show
+      return promise {remove: true} unless getByPath(context, value, true).attr
 
     # DOM element references
-    if node.attributes?['element-id']
-      context[node.attributes?['element-id'].value] = $(node)
+    if node.attributes['element-id']
+      value = node.attributes['element-id'].value
       node.removeAttribute('element-id')
+      context[value] = $(node)
+
+    for a in toArray(node.attributes) when not ignoreAttrRe.test a.name
+      procName = hypensToCamelCase("process-attribute-#{a.name}")
+      context[procName](context, node, a) if context[procName]
 
     # view instantiation view attribute
-    if node.attributes?.view
-      spec = node.attributes.view.value
+    if node.attributes['view']
+      value = node.attributes['view'].value
       node.removeAttribute('view')
-      instantiateView(context: context, spec: spec, node: node, useNode: true)
+      instantiateView(context: context, spec: value, node: node, useNode: true)
         .then (view) -> if view.parameterizable then {skip: true} else {}
-
     else
       promise {}
 
@@ -423,4 +439,44 @@
       for view in this.views
         view.remove()
 
-  {View, render, renderInPlace, wrapTemplate}
+  class ActiveView extends View
+
+    processAttributeAddAttr: (context, node, attr) ->
+      value = attr.value
+      node.removeAttribute(attr.name)
+      [attrName, path] = value.split(':')
+      {attrCtx, lastAttrName} = getByPath(context, path, true)
+      update = ->
+        if attrCtx[lastAttrName] and not node.hasAttribute(attrName)
+          node.setAttribute(attrName) 
+        else if node.hasAttribute(attrName)
+          node.removeAttribute(attrName)
+      attrCtx.on "change:#{lastAttrName}", update
+      update()
+
+    processAttributeSetAttr: (context, node, attr) ->
+      value = attr.value
+      node.removeAttribute(attr.name)
+      [attrName, path] = value.split(':')
+      {attrCtx, lastAttrName} = getByPath(context, path, true)
+      update = ->
+        newVal = attrCtx[lastAttrName]
+        if newVal != node.getAttribute(attrName)
+          node.setAttribute(attrName, newVal) 
+      attrCtx.on "change:#{lastAttrName}", update
+      update()
+
+    processValueBind: (context, value) ->
+      {attrCtx, lastAttrName} = getByPath(context, value, true)
+      node = document.createTextNode()
+      update = ->
+        newVal = attrCtx[lastAttrName].toString()
+        console.log 'trigger'
+        if newVal != node.data
+          console.log 'update'
+          node.data = newVal
+      attrCtx.on "change:#{lastAttrName}", update
+      update()
+      node
+
+  {View, ActiveView, render, renderInPlace, wrapTemplate}
