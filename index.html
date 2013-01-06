@@ -4,29 +4,40 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <title>Backbone.ViewDSL by andreypopp</title>
-
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/pygment_trac.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/main.js"></script>
     <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
   </head>
   <body>
-    <div class="wrapper">
+
       <header>
         <h1>Backbone.ViewDSL</h1>
         <p>DSL for defining Backbone.View hierarchies</p>
-
-        <p class="view"><a href="https://github.com/andreypopp/backbone.viewdsl">View the Project on GitHub <small>andreypopp/backbone.viewdsl</small></a></p>
-
-
-        <ul>
-          <li><a href="https://github.com/andreypopp/backbone.viewdsl/zipball/master">Download <strong>ZIP File</strong></a></li>
-          <li><a href="https://github.com/andreypopp/backbone.viewdsl/tarball/master">Download <strong>TAR Ball</strong></a></li>
-          <li><a href="https://github.com/andreypopp/backbone.viewdsl">View On <strong>GitHub</strong></a></li>
-        </ul>
       </header>
+
+      <div id="banner">
+        <span id="logo"></span>
+
+        <a href="https://github.com/andreypopp/backbone.viewdsl" class="button fork"><strong>View On GitHub</strong></a>
+        <div class="downloads">
+          <span>Downloads:</span>
+          <ul>
+            <li><a href="https://github.com/andreypopp/backbone.viewdsl/zipball/master" class="button">ZIP</a></li>
+            <li><a href="https://github.com/andreypopp/backbone.viewdsl/tarball/master" class="button">TAR</a></li>
+          </ul>
+        </div>
+      </div><!-- end banner -->
+
+    <div class="wrapper">
+      <nav>
+        <ul></ul>
+      </nav>
       <section>
         <p>Backbone.ViewDSL is a tiny library which provides a DSL for defining
 Backbone.View hierarchies. If you are tired of manually composing views in your
@@ -46,8 +57,8 @@ some sub-views:</p>
 <pre><code>class App extends Backbone.ViewDSL.View
   template: """
     &lt;h1&gt;{{options.title}}&lt;/h1&gt;
-    &lt;div class="sidebar" view="app.views.Sidebar" view-id="sidebar"&gt;&lt;/div&gt;
-    &lt;div class="content" view="app.views.Content" view-id="content"&gt;&lt;/div&gt;
+    &lt;view name="app.views.Sidebar" id="sidebar" /&gt;
+    &lt;view name="app.views.Content" id="content" /&gt;
     &lt;div class="footer"&gt;{{options.title}} by {{options.author}}&lt;/div&gt;
     """
 </code></pre>
@@ -59,16 +70,15 @@ Backbone abstractions:</p>
   render: -&gt;
     this.$el.html """
       &lt;h1&gt;#{@options.title}&lt;/h1&gt;
-      &lt;div class="sidebar"&gt;&lt;/div&gt;
-      &lt;div class="content"&gt;&lt;/div&gt;
       &lt;div class="footer"&gt;#{@options.title} by #{@options.author}&lt;/div&gt;
       """
+    $title = this.$('h1')
     this.content = new app.views.ContentView
-      el: @$('.content')
     this.content.render()
+    this.content.$el.after($title)
     this.sidebar = new app.views.SidebarView
-      el: @$('.sidebar')
     this.sidebar.render()
+    this.sidebar.$el.after($title)
 </code></pre>
 
 <p>Which is, I think, more verbose and mostly consist of boilerplate. Also
@@ -164,69 +174,161 @@ view instances. So the easiest way to define view is:</p>
 
 <h2>View instantiation</h2>
 
-<p>To instantiate a view you can use <code>view</code> DOM attribute:</p>
+<p>There are two ways you can instantiate views — using <code>&lt;view /&gt;</code> tag or
+using <code>view</code> DOM attribute on any DOM element.</p>
+
+<h3>Using <code>&lt;view /&gt;</code> tag</h3>
+
+<p>If you use <code>&lt;view /&gt;</code> tag then DOM element created by view will be used to
+replace the <code>&lt;view /&gt;</code> element in the resulting DOM, so the following code:</p>
+
+<pre><code>class myapp.views.SidebarView extends Backbone.View
+  className: 'sidebar'
+
+Backbone.ViewDSL.View.from """
+  &lt;div&gt;
+    &lt;view name="myapp.views.SidebarView" /&gt;
+  &lt;/div&gt;
+  """
+</code></pre>
+
+<p>will render a DOM like this:</p>
+
+<pre><code>&lt;div&gt;
+  &lt;div class="sidebar"&gt;&lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+
+<p>Note that <code>div.sidebar</code> element is created by <code>SidebarView</code> view. So usually it
+is a good idea to use <code>&lt;view /&gt;</code> tag to instantiate views which can only
+function correctly with predefined <code>tagName</code> or <code>className</code> attributes.</p>
+
+<p>See <em>Specs</em> section below to learn how to specify a view constructor in the
+<code>name</code> attribute.</p>
+
+<h3>Using <code>view</code> attribute</h3>
+
+<p>If you use <code>view</code> attribute on a DOM element then the DOM element will be passed
+as an <code>el</code> argument to a view constructor so all attributes on the DOM element
+such as <code>id</code> and <code>class</code> will be preserved. This example:</p>
+
+<pre><code>class myapp.views.ClickableLabel extends Backbone.View
+  className: 'sidebar'
+
+Backbone.ViewDSL.View.from """
+  &lt;div&gt;
+    &lt;span view="myapp.views.ClickableLabel" class="some-class"&gt;&lt;/span&gt;
+  &lt;/div&gt;
+  """
+</code></pre>
+
+<p>will result in the following DOM:</p>
+
+<pre><code>&lt;div&gt;
+  &lt;span class="some-class"&gt;&lt;/span&gt;
+&lt;/div&gt;
+</code></pre>
+
+<p>Using <code>view</code> attribute for instantiating views is useful with those views which
+can work with different configurations of <code>tagName</code> and/or <code>className</code>
+arguments.</p>
+
+<p>See <em>Specs</em> section below to learn how to specify a view constructor in the
+<code>view</code> attribute.</p>
+
+<h3>Accessing instantiated views</h3>
+
+<p>Sometimes you need to assign a specific view to an attribute of a parent
+view. You can do that with <code>view-id</code> attribute when you instantiate views using
+<code>view</code> attribute on a DOM element or with just an <code>id</code> attribute if you use
+<code>&lt;view /&gt;</code> tag:</p>
+
+<pre><code>view = Backbone.ViewDSL.View.from """
+  &lt;view name="SomeView" id="someView" /&gt;
+  &lt;div view="AnotherView" id="anotherView&gt;&lt;/div&gt;
+  """
+view.someView instanceof SomeView # true
+view.anotherView instanceof AnotherView # true
+</code></pre>
+
+<p>Also all instantiated views are stored inside <code>views</code> attribute of a parent
+view.  This is useful because on a call to <code>remove()</code> method of a parent view we
+can also call <code>remove()</code> method of every instantiated view — this way we can
+prevent "zombie" views to stay after we dispose a parent view. That's exactly
+the way how <code>Backbone.ViewDSL.View.remove()</code> is implemented.</p>
+
+<h3>Passing arguments into view constructor</h3>
+
+<p>You can pass additional parameters into a view constructor. Consider the
+example:</p>
 
 <pre><code>class MyView extends Backbone.ViewDSL.View
+  template: """
+    &lt;view name="Sidebar" model="sidebarItems" id="sidebar" /&gt;
+    &lt;ul view="Toolbar"
+      view-id="toolbar"
+      view-width="100"
+      view-items="toolbarItems"&gt;&lt;/ul&gt;
+    """
 
-  render: -&gt;
-    @renderDOM """
-      &lt;div view="myapp.views.SidebarView" class="sidebar"&gt;&lt;/div&gt;
-      """
+  initialize: -&gt;
+    this.toolbarItems = ["create", "edit", "remove"]
+
+  sidebarItems: -&gt;
+    ["links", "comments"]
+
+view = new MyView
+view.render()
+view.sidebar.options.model # ["links", "comments"]
+view.toolbar.options.items # ["create", "edit", "remove"]
+view.toolbar.options.width # "100"
 </code></pre>
 
-<p>This way <code>myapp.views.SidebarView</code> will be instantiated and rendered with <code>div.sidebar</code>
-element as the view's root element. All instantiated views become the "child
-views" of a parent view and stored inside a <code>views</code> attribute — that means on
-parent's <code>remove()</code> call they are also being freed by calling <code>remove()</code>.</p>
+<p>As you can see, you use <code>view-</code> prefixed attributes if you instantiate views
+with <code>view</code> attribute on a DOM element, otherwise, with <code>&lt;view /&gt;</code> tag you just
+use attributes without any prefix.</p>
 
-<p>You can also pass parameters to view constructor by using attributes which start
-with <code>view-</code> prefix:</p>
+<p>Parameter names are obtained by removing the <code>view-</code> prefix (only in case it was
+exist) from attribute names and then converting them to camelCase so
+<code>view-some-param</code> and <code>some-param</code> attribute names become <code>someParam</code> parameter
+name.</p>
+
+<p>Parameters values are looked up on a parent view object using attribute values:</p>
+
+<ul>
+<li>If value is found — it is used for a parameter value (see <code>toolbarItems</code> in
+the example above).</li>
+<li>If method is found — it is called and returned value is used for a parameter
+value (see <code>sidebarItems</code> in the example above).</li>
+<li>If no method and no value is found — then just string attribute value is
+used (see <code>view-width</code> attribute in the example above)</li>
+</ul><p>Note, that <code>view-id</code> and <code>id</code> attributes are treated specially and are not
+passed to a view constructor (see <em>Accessing instantiated views</em> section above).</p>
+
+<h3>Inserting already instantiated views into DOM</h3>
+
+<p>Sometimes you don't need to instantiate view but instead want just to render and
+insert a DOM element of an already instantiated view — the following example
+shows how to do that:</p>
 
 <pre><code>class MyView extends Backbone.ViewDSL.View
+  template: """
+    &lt;h1&gt;Sidebar&lt;/h1&gt;
+    &lt;view name="@sidebarView" /&gt;
+    &lt;div view="@footerView"&gt;&lt;/div&gt;
+    """
 
   initialize: -&gt;
-    this.sidebar = new SidebarItems()
-
-  render: -&gt;
-    @renderDOM """
-      &lt;div
-        view="myapp.views.SidebarView"
-        view-collection="sidebar"
-        view-style="vertical"
-        class="sidebar"&gt;&lt;/div&gt;
-      """
+    this.sidebarView = new SidebarView
+    this.footerView = new FooterView
 </code></pre>
 
-<p>This will call a <code>myapp.views.SidebarView</code> constructor with <code>collection</code> and
-<code>style</code> arguments — the first one will be equal to <code>sidebar</code> attribute of the
-<code>MyView</code> instance, the second one — just a <code>"vertical"</code> string value. So this
-will be equivalent to the following code:</p>
+<p>When using <code>&lt;view /&gt;</code> tag it is replaced with view's element <code>el</code> but when using
+<code>view</code> attribute on a DOM element a view's <code>setElement</code> method is called with
+the corresponding DOM element.</p>
 
-<pre><code>class MyView extends Backbone.View
-
-  initialize: -&gt;
-    this.sidebar = new SidebarItems()
-
-  render: -&gt;
-    this.sidebarView = new myapp.views.SidebarView
-      className: 'sidebar'
-      collection: this.sidebar
-      style: 'vertical'
-    this.sidebarView.render()
-    this.$el.append(this.sidebarView.$el)
-
-  remove: -&gt;
-    super
-    this.sidebarView.remove()
-</code></pre>
-
-<p>Note that attributes those name contain more hyphens besides ones which are part
-of the prefix will be converted to camelCase so <code>view-some-param</code> becomes
-<code>someParam</code>.</p>
-
-<p>There's also special attribute <code>view-id</code> — it instructs template processor to
-store instantiated view in an attribute of the parent view. The <code>view-id</code> value
-becomes the name of the attribute.</p>
+<p>Note the special form of specs in <code>name</code> and <code>view</code> attributes which refers to
+objects inside the context, e.g. inside the <code>MyView</code> instance.</p>
 
 <h2>String and DOM node values interpolation</h2>
 
@@ -273,21 +375,23 @@ inside <code>if</code> attributes.</p>
 
 <h2>Specs</h2>
 
-<p>Specs are strings which point to JS objects, specs can point to some global
-object or to some object inside AMD module:</p>
+<p>Specs are strings which point to JS objects. They can point to some global
+object, to some object inside a context (a view which renders a DOM) or
+to some object inside AMD module:</p>
 
 <ul>
 <li><p><code>module1/module2:obj1.obj2</code> points to <code>obj2</code> inside <code>obj1</code> in
 <code>module1/module2</code> AMD module.</p></li>
 <li><p><code>obj1.obj2</code> points to <code>obj2</code> inside <code>obj1</code> inside <code>window</code> object</p></li>
+<li><p><code>@obj</code> points to <code>obj</code> of a context (a view which renders a DOM)</p></li>
 </ul>
       </section>
       <footer>
-        <p>This project is maintained by <a href="https://github.com/andreypopp">andreypopp</a></p>
-        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+        <p>Project maintained by <a href="https://github.com/andreypopp">andreypopp</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="http://twitter.com/#!/michigangraham">mattgraham</a></small></p>
       </footer>
     </div>
-    <script src="javascripts/scale.fix.js"></script>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
     
   </body>
 </html>
