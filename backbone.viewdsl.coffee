@@ -444,25 +444,27 @@
     processAttributeToggleAttr: (context, node, attr) ->
       value = attr.value
       node.removeAttribute(attr.name)
+      node = $(node)
       [attrName, path] = value.split(':', 2)
       {attrCtx, lastAttrName} = getByPath(context, path, true)
       update = ->
-        if attrCtx[lastAttrName] and not node.hasAttribute(attrName)
-          node.setAttribute(attrName)
-        else if node.hasAttribute(attrName)
-          node.removeAttribute(attrName)
+        if attrCtx[lastAttrName]
+          node.attr(attrName, '')
+        else
+          node.removeAttr(attrName)
       attrCtx.on "change:#{lastAttrName}", update
       update()
 
     processAttributeSetAttr: (context, node, attr) ->
       value = attr.value
       node.removeAttribute(attr.name)
+      node = $(node)
       [attrName, path] = value.split(':')
       {attrCtx, lastAttrName} = getByPath(context, path, true)
       update = ->
         newVal = attrCtx[lastAttrName]
-        if newVal != node.getAttribute(attrName)
-          node.setAttribute(attrName, newVal) 
+        if newVal != node.attr(attrName)
+          node.removeAttr(attrName)
       attrCtx.on "change:#{lastAttrName}", update
       update()
 
